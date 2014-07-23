@@ -12,8 +12,8 @@ BOT_NAME = 'housepwned'
 
 SPIDER_MODULES = ['housepwned.spiders']
 NEWSPIDER_MODULE = 'housepwned.spiders'
-FEED_FORMAT = 'csv'
-FEED_URI = 'file:///tmp/houseco.csv'
+FEED_FORMAT = 'jsonlines'
+FEED_URI = 'file:///tmp/houseco.json'
 DOWNLOAD_DELAY = 2
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
