@@ -23,22 +23,6 @@ def parse_int(text):
         return 0
 
 
-def extract_int(num_list):
-    """Extract an int from the SelectList"""
-    if not len(num_list) == 1:
-        return 0
-
-    return parse_int(num_list[0])
-
-
-def int_from_xpath(response, xpath):
-    """
-    Extract a single int from an xpath text, given a response
-    """
-    sellist = response.xpath(xpath).extract()
-    return extract_int(sellist)
-
-
 def get_next_link(response):
     xpath = '//div[@class="homeco_pr_content"]/div[4]/form/table/tr[1]/td[4]/table/tr[1]/td[1]/a/@href'
     linklist = response.xpath(xpath).extract()
@@ -75,17 +59,20 @@ def extract_row(date, location, response, i):
     post code and date.
     """
 
-    property_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[1]/text()' % i
-    num_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[2]/text()' % i
-    avg_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[3]/text()' % i
-    med_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[4]/text()' % i
+    row_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td/text()' % i
+    row_data  = response.xpath(row_xpath).extract()
 
-    property_type = response.xpath(property_xpath)[0].extract()
-    num = int_from_xpath(response, num_xpath)
-    avg = int_from_xpath(response, avg_xpath)
-    med = int_from_xpath(response, med_xpath)
+    # for reasons unknown if they sold no proerties of a given type, the number
+    # isn't listed as zero, it's just not there. In these instances the unpack
+    # will fail, so we just return a row of zeros, which is what should have
+    # been there in the first place
+    if not len(row_data) == 4:
+        return PriceItem(date, location, row_data[0], 0, 0, 0)
 
-    return PriceItem(date, location, property_type, num, avg, med)
+    property_type, num, avg, med = row_data
+
+    return PriceItem(date, location, property_type, parse_int(num),
+                     parse_int(avg), parse_int(med))
 
 
 def extract_summary(date, location, response):
