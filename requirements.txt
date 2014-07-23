@@ -1,0 +1,13 @@
+Scrapy==0.24.2
+Twisted==14.0.0
+cffi==0.8.6
+cryptography==0.5.2
+cssselect==0.9.1
+lxml==3.3.5
+pyOpenSSL==0.14
+pycparser==2.10
+queuelib==1.1.1
+six==1.7.3
+w3lib==1.6
+wsgiref==0.1.2
+zope.interface==4.1.1
