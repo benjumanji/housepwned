@@ -108,7 +108,9 @@ class HomeCoSpider(scrapy.Spider):
     name = "homeco"
     allowed_domains = ["home.co.uk"]
     start_urls = [
-        "http://www.home.co.uk/guides/sold_house_prices.htm?location=E14&month=01&year=2002"
+        "http://www.home.co.uk/guides/sold_house_prices.htm?location=se6&month=01&year=2002",
+        "http://www.home.co.uk/guides/sold_house_prices.htm?location=se13&month=01&year=2002",
+        "http://www.home.co.uk/guides/sold_house_prices.htm?location=elephant_castle&month=01&year=2002"
     ]
 
     def parse(self, response):
