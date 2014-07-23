@@ -7,7 +7,7 @@
 import scrapy
 from urlparse import parse_qs, urlparse
 
-from housepwned.items import PriceItem
+from housepwned.items import PriceItem, SummaryItem
 
 
 def parse_int(text):
@@ -88,6 +88,22 @@ def extract_row(date, location, response, i):
     return PriceItem(date, location, property_type, num, avg, med)
 
 
+def extract_summary(date, location, response):
+    """
+    Extract the headline data from the page.
+
+    This is just the average price across all the properties along with a count
+    of properties sold.
+    """
+
+    summary_xpath = '//div[@class="homeco_pr_content"]/div[1]/table/tr/td[2]/text()'
+    num_list = response.xpath(summary_xpath).extract()
+    sold = parse_int(num_list[0])
+    avg_price = parse_int(num_list[1])
+
+    return SummaryItem(date, location, sold, avg_price)
+
+
 class HomeCoSpider(scrapy.Spider):
     name = "homeco"
     allowed_domains = ["home.co.uk"]
@@ -97,6 +113,8 @@ class HomeCoSpider(scrapy.Spider):
 
     def parse(self, response):
         date, location = extract_url_info(response.url)
+
+        yield extract_summary(date, location, response)
 
         for i in range(2,5):
             yield extract_row(date, location, response, i)

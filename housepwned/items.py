@@ -30,3 +30,22 @@ class PriceItem(scrapy.Item):
         self['num_sold'] = num_sold
         self['avg_price'] = avg_price
         self['med_price'] = med_price
+
+
+class SummaryItem(scrapy.Item):
+    """
+    Item to hold the summary sale data for a given date and location.
+    """
+    location = scrapy.Field()
+    date = scrapy.Field()
+    num_sold = scrapy.Field()
+    avg_price = scrapy.Field()
+
+    def __init__(self, date, location, num_sold, avg_price):
+
+        super(scrapy.Item, self).__init__()
+
+        self['date'] = date
+        self['location'] = location
+        self['num_sold'] = num_sold
+        self['avg_price'] = avg_price
