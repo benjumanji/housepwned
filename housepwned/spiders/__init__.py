@@ -7,7 +7,7 @@
 import scrapy
 from urlparse import parse_qs, urlparse
 
-from housepwned.items import PostcodePriceItem
+from housepwned.items import PriceItem
 
 
 def parse_int(text):
@@ -22,6 +22,7 @@ def parse_int(text):
     except ValueError:
         return 0
 
+
 def extract_int(num_list):
     """Extract an int from the SelectList"""
     if not len(num_list) == 1:
@@ -29,12 +30,14 @@ def extract_int(num_list):
 
     return parse_int(num_list[0])
 
+
 def int_from_xpath(response, xpath):
     """
     Extract a single int from an xpath text, given a response
     """
     sellist = response.xpath(xpath).extract()
     return extract_int(sellist)
+
 
 def get_next_link(response):
     xpath = '//div[@class="homeco_pr_content"]/div[4]/form/table/tr[1]/td[4]/table/tr[1]/td[1]/a/@href'
@@ -45,22 +48,44 @@ def get_next_link(response):
 
     return linklist[0]
 
-def extract_date(url):
+
+def extract_url_info(url):
     """
-    Get the date from the url
-    
+    Get the date and location from the url.
+
     For some reason the link to the next month doubles up on all the query
     params so you have year / month appearing twice. We want the second
     occurence, if there is one (all initial links have the param once).
 
-    Returns the date as a string YYYY-MM
+    Returns a tuple of date and location, date format: YYYY-MM.
     """
     qs = urlparse(url).query
     params = parse_qs(qs)
 
     year = params['year'][1] if len(params['year']) == 2 else params['year'][0]
     month = params['month'][1] if len(params['month']) == 2 else params['month'][0]
-    return '%s-%s' % (year, month)
+    return ('%s-%s' % (year, month), params['location'][0])
+
+
+def extract_row(date, location, response, i):
+    """
+    Extract one row of data from the price table.
+
+    This is represents price data relating to a type of property for a given
+    post code and date.
+    """
+
+    property_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[1]/text()' % i
+    num_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[2]/text()' % i
+    avg_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[3]/text()' % i
+    med_xpath = '//div[@class="homeco_pr_content"]/div[2]/table/tr[%s]/td[4]/text()' % i
+
+    property_type = response.xpath(property_xpath)[0].extract()
+    num = int_from_xpath(response, num_xpath)
+    avg = int_from_xpath(response, avg_xpath)
+    med = int_from_xpath(response, med_xpath)
+
+    return PriceItem(date, location, property_type, num, avg, med)
 
 
 class HomeCoSpider(scrapy.Spider):
@@ -70,28 +95,12 @@ class HomeCoSpider(scrapy.Spider):
         "http://www.home.co.uk/guides/sold_house_prices.htm?location=E14&month=01&year=2002"
     ]
 
-    num_sel = '//div[@class="homeco_pr_content"]/div[2]/table/tr[2]/td[2]/text()'
-    avg_sel = '//div[@class="homeco_pr_content"]/div[2]/table/tr[2]/td[3]/text()'
-    med_sel = '//div[@class="homeco_pr_content"]/div[2]/table/tr[2]/td[4]/text()'
-
     def parse(self, response):
-        num_sold = int_from_xpath(response, self.num_sel)
-        avg_price = int_from_xpath(response, self.avg_sel)
-        med_price = int_from_xpath(response, self.med_sel)
+        date, location = extract_url_info(response.url)
 
-        date = extract_date(response.url)
-
-        item = PostcodePriceItem()
-        item['postcode'] = "E14"
-        item['date'] = date
-        item['num_sold'] = num_sold
-        item['avg_price'] = avg_price
-        item['med_price'] = med_price
-
-        yield item
+        for i in range(2,5):
+            yield extract_row(date, location, response, i)
 
         link = get_next_link(response)
-
         if link:
             yield scrapy.Request(link)
-
